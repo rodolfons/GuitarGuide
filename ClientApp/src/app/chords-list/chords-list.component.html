@@ -1,0 +1,15 @@
+<div>
+  <h2>Lista de Acordes</h2>
+
+  <div>
+    <input [(ngModel)]="newName" placeholder="Nome do acorde" />
+    <input [(ngModel)]="newPositions" placeholder='Posições JSON, ex: ["x",0,2,2,1,0]' style="width:320px" />
+    <button (click)="add()">Adicionar</button>
+  </div>
+
+  <div *ngFor="let chord of chords" class="chord">
+    <strong>{{ chord.name }}</strong>
+    <p>{{ chord.description }}</p>
+    <app-chord-visualizer [positionsJson]="chord.positionsJson"></app-chord-visualizer>
+  </div>
+</div>
