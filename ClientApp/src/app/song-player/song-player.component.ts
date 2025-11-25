@@ -15,6 +15,9 @@ export class SongPlayerComponent implements OnInit {
   currentBeat = 0;
   isPlaying = false;
   intervalId: any = null;
+  animationFrameId: any = null;
+  startTime: number = 0;
+  pausedTime: number = 0;
   Math = Math; // Para usar no template
 
   constructor(private songService: SongService) {}
@@ -34,10 +37,10 @@ export class SongPlayerComponent implements OnInit {
     this.stop();
     if (song.sequenceJson) {
       const parsed = JSON.parse(song.sequenceJson);
-      // Convert all properties to numbers
+      // Convert all properties to numbers and add 10 empty beats at the start
       this.musicalElements = parsed.map((item: any) => ({
         ...item,
-        beat: Number(item.beat),
+        beat: Number(item.beat) + 10, // Add 10 beats offset
         duration: Number(item.duration),
         chordId: item.chordId ? Number(item.chordId) : undefined,
         fret: item.fret !== undefined ? Number(item.fret) : undefined,
@@ -58,27 +61,46 @@ export class SongPlayerComponent implements OnInit {
     this.isPlaying = true;
     const tempo = this.selectedSong.tempo || 120;
     const beatDuration = 60000 / tempo; // ms per beat
-
-    this.intervalId = setInterval(() => {
-      this.currentBeat++;
+    
+    this.startTime = performance.now() - (this.pausedTime || 0);
+    
+    const animate = (currentTime: number) => {
+      if (!this.isPlaying) return;
+      
+      const elapsed = currentTime - this.startTime;
+      this.currentBeat = elapsed / beatDuration;
+      
       const totalBeats = this.getTotalBeats();
       if (this.currentBeat >= totalBeats) {
-        this.currentBeat = 0; // Loop
+        this.currentBeat = 0;
+        this.startTime = currentTime;
+        this.pausedTime = 0;
       }
-    }, beatDuration);
+      
+      this.animationFrameId = requestAnimationFrame(animate);
+    };
+    
+    this.animationFrameId = requestAnimationFrame(animate);
   }
 
   pause(): void {
     this.isPlaying = false;
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
+    this.pausedTime = this.currentBeat * (60000 / (this.selectedSong?.tempo || 120));
   }
 
   stop(): void {
-    this.pause();
+    this.isPlaying = false;
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
     this.currentBeat = 0;
+    this.startTime = 0;
+    this.pausedTime = 0;
   }
 
   getTotalBeats(): number {
@@ -128,5 +150,18 @@ export class SongPlayerComponent implements OnInit {
     return this.musicalElements.filter(elem => 
       beat >= elem.beat && beat < (elem.beat + elem.duration)
     );
+  }
+
+  getScrollOffset(): number {
+    // A linha vertical fica fixa em 250px da esquerda
+    // Então movemos a tablatura para a esquerda baseado no beat atual
+    // Offset negativo move a tablatura para a esquerda
+    const fixedLinePosition = 250; // posição fixa da linha
+    const beatWidth = 80; // largura de cada beat em pixels
+    const initialOffset = 50; // offset inicial do SVG
+    
+    // Calcula quanto devemos mover a tablatura para a esquerda
+    // para que o beat atual fique alinhado com a linha fixa
+    return fixedLinePosition - (initialOffset + this.currentBeat * beatWidth);
   }
 }

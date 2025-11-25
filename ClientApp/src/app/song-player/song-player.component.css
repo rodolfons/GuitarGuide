@@ -1,0 +1,45 @@
+.timeline-container {
+  background: #1a1a1a;
+  padding: 20px;
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+  height: 370px;
+}
+
+.timeline-scroll {
+  overflow-x: hidden;
+  width: 100%;
+  height: 300px;
+  position: relative;
+  margin-top: 10px;
+}
+
+.current-position-line {
+  position: absolute;
+  left: 250px; /* Fixed position - linha fica parada aqui */
+  top: 70px;
+  width: 3px;
+  height: 240px;
+  background: #ff0;
+  z-index: 10;
+  pointer-events: none;
+  box-shadow: 0 0 10px #ff0;
+}
+
+.string-labels {
+  position: absolute;
+  left: 20px;
+  top: 70px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.string-label {
+  position: absolute;
+  color: #fff;
+  font-size: 12px;
+  font-weight: bold;
+  width: 20px;
+  text-align: center;
+}
