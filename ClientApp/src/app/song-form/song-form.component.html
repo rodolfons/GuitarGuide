@@ -1,0 +1,191 @@
+<div style="padding: 20px; max-width: 800px;">
+  <h2>{{ songToEdit ? 'Editar Música' : 'Cadastrar Música' }}</h2>
+  
+  <div style="margin-bottom: 20px;">
+    <label>Nome da Música: </label>
+    <input [(ngModel)]="name" type="text" style="width: 100%; padding: 8px; margin-top: 5px;">
+  </div>
+
+  <div style="margin-bottom: 20px;">
+    <label>Artista: </label>
+    <input [(ngModel)]="artist" type="text" style="width: 100%; padding: 8px; margin-top: 5px;">
+  </div>
+
+  <div style="margin-bottom: 20px; display: flex; gap: 20px;">
+    <div style="flex: 1;">
+      <label>Afinação: </label>
+      <input [(ngModel)]="tuning" type="text" style="width: 100%; padding: 8px; margin-top: 5px;">
+    </div>
+    <div style="flex: 1;">
+      <label>Tempo (BPM): </label>
+      <input [(ngModel)]="tempo" type="number" style="width: 100%; padding: 8px; margin-top: 5px;">
+    </div>
+  </div>
+
+  <div style="margin-bottom: 20px;">
+    <h3>Adicionar Elementos Musicais</h3>
+    
+    <div style="margin-bottom: 15px;">
+      <label style="margin-right: 20px;">
+        <input type="radio" [(ngModel)]="elementType" value="chord" name="elementType"> Acorde
+      </label>
+      <label style="margin-right: 20px;">
+        <input type="radio" [(ngModel)]="elementType" value="note" name="elementType"> Nota Individual
+      </label>
+      <label>
+        <input type="radio" [(ngModel)]="elementType" value="tab" name="elementType"> Tablatura (6 cordas)
+      </label>
+    </div>
+
+    <div style="display: flex; gap: 10px; align-items: end; margin-bottom: 10px; flex-wrap: wrap;">
+      <div>
+        <label style="display: block; margin-bottom: 5px;">Beat:</label>
+        <input [(ngModel)]="beat" type="number" style="width: 80px; padding: 8px;" min="0" step="0.25">
+      </div>
+      <div>
+        <label style="display: block; margin-bottom: 5px;">Duração (beats):</label>
+        <input [(ngModel)]="duration" type="number" style="width: 80px; padding: 8px;" min="0.25" step="0.25">
+      </div>
+
+      <!-- Campos para Acorde -->
+      <div *ngIf="elementType === 'chord'" style="display: flex; gap: 10px;">
+        <div>
+          <label style="display: block; margin-bottom: 5px;">Acorde:</label>
+          <select [(ngModel)]="selectedChordId" style="padding: 8px; width: 150px;">
+            <option [value]="null">Selecione</option>
+            <option *ngFor="let chord of availableChords" [value]="chord.id">{{ chord.name }}</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; margin-bottom: 5px;">Traste:</label>
+          <input [(ngModel)]="fret" type="number" style="width: 80px; padding: 8px;" min="0">
+        </div>
+      </div>
+
+      <!-- Campos para Nota -->
+      <div *ngIf="elementType === 'note'" style="display: flex; gap: 10px;">
+        <div>
+          <label style="display: block; margin-bottom: 5px;">Corda:</label>
+          <select [(ngModel)]="noteString" style="padding: 8px; width: 120px;">
+            <option [value]="0">E (1ª)</option>
+            <option [value]="1">B (2ª)</option>
+            <option [value]="2">G (3ª)</option>
+            <option [value]="3">D (4ª)</option>
+            <option [value]="4">A (5ª)</option>
+            <option [value]="5">E (6ª)</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; margin-bottom: 5px;">Traste:</label>
+          <input [(ngModel)]="noteFret" type="number" style="width: 80px; padding: 8px;" min="0">
+        </div>
+      </div>
+
+      <!-- Campos para Tablatura (6 cordas) -->
+      <div *ngIf="elementType === 'tab'" style="display: flex; gap: 10px;">
+        <div>
+          <label style="display: block; margin-bottom: 5px;">Posições (JSON):</label>
+          <input [(ngModel)]="tabPositions" type="text" placeholder='[0,0,0,0,7,0]' style="width: 200px; padding: 8px;">
+          <small style="display: block; color: #666; margin-top: 3px;">Formato: [E, B, G, D, A, E] ou use "x" para abafar</small>
+        </div>
+      </div>
+
+      <button *ngIf="editingIndex === null" (click)="addElement()" 
+              style="padding: 8px 20px; background: #28a745; color: white; border: none; cursor: pointer; border-radius: 3px; margin-right: 10px;">
+        Adicionar
+      </button>
+      <button *ngIf="editingIndex !== null" (click)="updateElement()" 
+              style="padding: 8px 20px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 3px; margin-right: 10px;">
+        Atualizar
+      </button>
+      <button *ngIf="editingIndex !== null" (click)="cancelEdit()" 
+              style="padding: 8px 20px; background: #6c757d; color: white; border: none; cursor: pointer; border-radius: 3px;">
+        Cancelar
+      </button>
+    </div>
+    
+    <div style="margin-top: 15px;">
+      <h4>Elementos (ordenados por beat):</h4>
+      <div style="max-height: 300px; overflow-y: auto;">
+        <div *ngFor="let elem of musicalElements; let i = index" 
+             [style.background]="editingIndex === i ? '#e3f2fd' : '#f0f0f0'"
+             style="padding: 10px; margin-bottom: 5px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center;">
+          <span *ngIf="elem.type === 'chord'">
+            <strong style="color: #007bff;">🎸 {{ getChordName(elem.chordId!) }}</strong> 
+            - Beat {{ elem.beat }} | Duração: {{ elem.duration }} | Traste: {{ elem.fret }}
+          </span>
+          <span *ngIf="elem.type === 'note'">
+            <strong style="color: #28a745;">🎵 Nota</strong> 
+            - Beat {{ elem.beat }} | Duração: {{ elem.duration }} | Corda: {{ getStringName(elem.string!) }} | Traste: {{ elem.noteFret }}
+          </span>
+          <span *ngIf="elem.type === 'tab'" style="flex: 1;">
+            <strong style="color: #ff1493;">🎼 Tablatura</strong> 
+            - Beat {{ elem.beat }} | Duração: {{ elem.duration }}<br>
+            <small style="color: #666;">{{ parseTabPositions(elem.tabPositions!) }}</small>
+          </span>
+          <div style="display: flex; gap: 5px;">
+            <button (click)="editElement(i)" 
+                    style="background: #007bff; color: white; border: none; padding: 4px 8px; cursor: pointer; border-radius: 3px;">
+              ✎
+            </button>
+            <button (click)="removeElement(i)" 
+                    style="background: #dc3545; color: white; border: none; padding: 4px 8px; cursor: pointer; border-radius: 3px;">
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 20px; display: none;">
+    <h3>Adicionar Notas à Tablatura</h3>
+    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+      <div>
+        <label style="display: block; margin-bottom: 5px;">Posição (beat):</label>
+        <input type="number" style="width: 80px; padding: 8px;" min="0" step="0.25">
+      </div>
+      <div>
+        <label style="display: block; margin-bottom: 5px;">Corda:</label>
+        <select style="padding: 8px; width: 120px;">
+          <option [value]="0">E (1ª)</option>
+          <option [value]="1">B (2ª)</option>
+          <option [value]="2">G (3ª)</option>
+          <option [value]="3">D (4ª)</option>
+          <option [value]="4">A (5ª)</option>
+          <option [value]="5">E (6ª)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 20px;">
+    <h3>Acordes Utilizados</h3>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+      <label *ngFor="let chord of availableChords" 
+             style="display: flex; align-items: center; gap: 5px; padding: 8px; background: #f8f9fa; border-radius: 5px; cursor: pointer;"
+             [style.background]="isChordSelected(chord.id!) ? '#007bff' : '#f8f9fa'"
+             [style.color]="isChordSelected(chord.id!) ? 'white' : 'black'">
+        <input type="checkbox" 
+               [checked]="isChordSelected(chord.id!)" 
+               (change)="toggleChord(chord.id!)"
+               style="cursor: pointer;">
+        {{ chord.name }}
+      </label>
+    </div>
+  </div>
+
+  <div style="margin-top: 30px; display: flex; gap: 10px;">
+    <button (click)="save()" 
+            [disabled]="!name"
+            style="padding: 12px 30px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px; font-size: 16px;"
+            [style.opacity]="!name ? '0.5' : '1'"
+            [style.cursor]="!name ? 'not-allowed' : 'pointer'">
+      {{ songToEdit ? 'Atualizar Música' : 'Salvar Música' }}
+    </button>
+    <button (click)="cancel()" 
+            style="padding: 12px 30px; background: #6c757d; color: white; border: none; cursor: pointer; border-radius: 5px; font-size: 16px;">
+      Cancelar
+    </button>
+  </div>
+</div>

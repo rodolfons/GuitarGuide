@@ -1,0 +1,178 @@
+<div style="padding: 20px;">
+  <h2>Player de Músicas</h2>
+
+  <div style="margin-bottom: 20px;">
+    <h3>Selecione uma Música:</h3>
+    <select (change)="selectSong(songs[$any($event.target).value])" style="padding: 10px; width: 100%; max-width: 400px;">
+      <option value="">-- Escolha uma música --</option>
+      <option *ngFor="let song of songs; let i = index" [value]="i">
+        {{ song.name }} <span *ngIf="song.artist">- {{ song.artist }}</span>
+      </option>
+    </select>
+  </div>
+
+  <div *ngIf="selectedSong" style="margin-top: 30px;">
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+      <h3>{{ selectedSong.name }}</h3>
+      <p *ngIf="selectedSong.artist"><strong>Artista:</strong> {{ selectedSong.artist }}</p>
+      <p *ngIf="selectedSong.tuning"><strong>Afinação:</strong> {{ selectedSong.tuning }}</p>
+      <p *ngIf="selectedSong.tempo"><strong>Tempo:</strong> {{ selectedSong.tempo }} BPM</p>
+      <p><strong>Beat Atual:</strong> {{ currentBeat.toFixed(2) }}</p>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <button (click)="play()" [disabled]="isPlaying" 
+              style="padding: 10px 20px; margin-right: 10px; background: #28a745; color: white; border: none; cursor: pointer; border-radius: 5px;"
+              [style.opacity]="isPlaying ? '0.5' : '1'">
+        ▶ Play
+      </button>
+      <button (click)="pause()" [disabled]="!isPlaying"
+              style="padding: 10px 20px; margin-right: 10px; background: #ffc107; color: white; border: none; cursor: pointer; border-radius: 5px;"
+              [style.opacity]="!isPlaying ? '0.5' : '1'">
+        ⏸ Pause
+      </button>
+      <button (click)="stop()"
+              style="padding: 10px 20px; background: #dc3545; color: white; border: none; cursor: pointer; border-radius: 5px;">
+        ⏹ Stop
+      </button>
+    </div>
+
+    <!-- Timeline Visual -->
+    <div style="background: #1a1a1a; padding: 20px; border-radius: 10px; overflow-x: auto;">
+      <h4 style="color: white;">Timeline:</h4>
+      <svg [attr.width]="getTotalBeats() * 80 + 100" height="300" style="min-width: 600px;">
+        <!-- Strings (6 horizontal lines) for notes -->
+        <g *ngFor="let string of [0,1,2,3,4,5]; let stringIndex = index">
+          <line [attr.x1]="50" 
+                [attr.y1]="50 + stringIndex * 40" 
+                [attr.x2]="getTotalBeats() * 80 + 50" 
+                [attr.y2]="50 + stringIndex * 40" 
+                stroke="#444" 
+                stroke-width="2"/>
+          <text [attr.x]="10" 
+                [attr.y]="50 + stringIndex * 40 + 5" 
+                fill="#fff" 
+                font-size="12">
+                {{ ['E','B','G','D','A','E'][stringIndex] }}
+          </text>
+        </g>
+
+        <!-- Current position indicator -->
+        <line *ngIf="isPlaying || currentBeat > 0"
+              [attr.x1]="50 + currentBeat * 80" 
+              [attr.y1]="20" 
+              [attr.x2]="50 + currentBeat * 80" 
+              [attr.y2]="270" 
+              stroke="#ff0" 
+              stroke-width="3"/>
+
+        <!-- Musical Elements -->
+        <g *ngFor="let elem of musicalElements">
+          <!-- Chord -->
+          <g *ngIf="elem.type === 'chord'">
+            <rect [attr.x]="50 + elem.beat * 80" 
+                  [attr.y]="10"
+                  [attr.width]="elem.duration * 80"
+                  [attr.height]="250"
+                  [attr.fill]="currentBeat >= elem.beat && currentBeat < (elem.beat + elem.duration) ? '#007bff40' : '#00bfff20'"
+                  stroke="#00bfff"
+                  stroke-width="2"/>
+            <text [attr.x]="50 + elem.beat * 80 + (elem.duration * 80 / 2)" 
+                  [attr.y]="30" 
+                  fill="#fff" 
+                  font-size="16" 
+                  font-weight="bold"
+                  text-anchor="middle">
+              {{ getChordById(elem.chordId!)?.name }}
+            </text>
+            
+            <!-- Chord positions on strings -->
+            <g *ngFor="let pos of getChordPositions(elem.chordId!); let stringIndex = index">
+              <!-- Fret numbers (excluding 0) -->
+              <text *ngIf="pos !== 'x' && pos !== 'X' && pos !== 0"
+                    [attr.x]="50 + elem.beat * 80 + 20" 
+                    [attr.y]="50 + stringIndex * 40 + 5" 
+                    [attr.fill]="currentBeat >= elem.beat && currentBeat < (elem.beat + elem.duration) ? '#ffa500' : '#00bfff'" 
+                    font-size="18" 
+                    font-weight="bold"
+                    text-anchor="middle">
+                {{ pos }}
+              </text>
+              <!-- Muted string -->
+              <text *ngIf="pos === 'x' || pos === 'X'"
+                    [attr.x]="50 + elem.beat * 80 + 20" 
+                    [attr.y]="50 + stringIndex * 40 + 5" 
+                    fill="#f00" 
+                    font-size="16" 
+                    font-weight="bold"
+                    text-anchor="middle">
+                X
+              </text>
+            </g>
+          </g>
+
+          <!-- Note -->
+          <g *ngIf="elem.type === 'note'">
+            <circle [attr.cx]="50 + (elem.beat + elem.duration/2) * 80" 
+                    [attr.cy]="50 + elem.string! * 40" 
+                    [attr.r]="8"
+                    [attr.fill]="currentBeat >= elem.beat && currentBeat < (elem.beat + elem.duration) ? '#90ee90' : '#0f0'"
+                    stroke="#fff"
+                    stroke-width="2"/>
+            <text [attr.x]="50 + (elem.beat + elem.duration/2) * 80" 
+                  [attr.y]="50 + elem.string! * 40 + 5" 
+                  fill="#000" 
+                  font-size="12" 
+                  font-weight="bold"
+                  text-anchor="middle">
+              {{ elem.noteFret }}
+            </text>
+          </g>
+
+          <!-- Tab (6 strings at once) -->
+          <g *ngIf="elem.type === 'tab'">
+            <rect [attr.x]="50 + elem.beat * 80" 
+                  [attr.y]="10"
+                  [attr.width]="elem.duration * 80"
+                  [attr.height]="250"
+                  [attr.fill]="currentBeat >= elem.beat && currentBeat < (elem.beat + elem.duration) ? '#ff69b440' : '#ff69b420'"
+                  stroke="#ff69b4"
+                  stroke-width="2"/>
+            <text [attr.x]="50 + elem.beat * 80 + (elem.duration * 80 / 2)" 
+                  [attr.y]="30" 
+                  fill="#fff" 
+                  font-size="12" 
+                  font-weight="bold"
+                  text-anchor="middle">
+              TAB
+            </text>
+            
+            <!-- Tab positions on all 6 strings -->
+            <g *ngFor="let pos of parseTabPositions(elem.tabPositions!); let stringIndex = index">
+              <!-- Fret numbers (excluding 0) -->
+              <text *ngIf="pos !== 'x' && pos !== 'X' && pos !== 0"
+                    [attr.x]="50 + elem.beat * 80 + 20" 
+                    [attr.y]="50 + stringIndex * 40 + 5" 
+                    [attr.fill]="currentBeat >= elem.beat && currentBeat < (elem.beat + elem.duration) ? '#ffa500' : '#ff69b4'" 
+                    font-size="18" 
+                    font-weight="bold"
+                    text-anchor="middle">
+                {{ pos }}
+              </text>
+              <!-- Muted string -->
+              <text *ngIf="pos === 'x' || pos === 'X'"
+                    [attr.x]="50 + elem.beat * 80 + 20" 
+                    [attr.y]="50 + stringIndex * 40 + 5" 
+                    fill="#f00" 
+                    font-size="16" 
+                    font-weight="bold"
+                    text-anchor="middle">
+                X
+              </text>
+            </g>
+          </g>
+        </g>
+      </svg>
+    </div>
+  </div>
+</div>

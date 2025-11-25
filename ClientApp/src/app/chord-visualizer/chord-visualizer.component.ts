@@ -17,4 +17,12 @@ export class ChordVisualizerComponent implements OnChanges {
       this.positions = [];
     }
   }
+
+  isValidNumber(value: string | number): boolean {
+    return !isNaN(Number(value));
+  }
+
+  toNumber(value: string | number): number {
+    return Number(value);
+  }
 }

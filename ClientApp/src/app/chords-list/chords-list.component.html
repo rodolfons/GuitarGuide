@@ -7,9 +7,22 @@
     <button (click)="add()">Adicionar</button>
   </div>
 
-  <div *ngFor="let chord of chords" class="chord">
-    <strong>{{ chord.name }}</strong>
-    <p>{{ chord.description }}</p>
-    <app-chord-visualizer [positionsJson]="chord.positionsJson"></app-chord-visualizer>
+  <div *ngFor="let chord of chords" style="background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <div *ngIf="editingChord?.id !== chord.id">
+      <h3 style="margin: 0 0 10px 0;">{{ chord.name }}</h3>
+      <p *ngIf="chord.description" style="margin: 0 0 10px 0; color: #666;">{{ chord.description }}</p>
+      <app-chord-visualizer [positionsJson]="chord.positionsJson"></app-chord-visualizer>
+      <div style="margin-top: 10px;">
+        <button (click)="startEdit(chord)" style="padding: 5px 15px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 3px; margin-right: 10px;">Editar</button>
+        <button (click)="delete(chord)" style="padding: 5px 15px; background: #dc3545; color: white; border: none; cursor: pointer; border-radius: 3px;">Excluir</button>
+      </div>
+    </div>
+
+    <div *ngIf="editingChord?.id === chord.id">
+      <input [(ngModel)]="editName" placeholder="Nome do acorde" style="padding: 8px; margin-right: 10px;" />
+      <input [(ngModel)]="editPositions" placeholder='Posições JSON' style="width:320px; padding: 8px; margin-right: 10px;" />
+      <button (click)="saveEdit()" style="padding: 8px 15px; background: #28a745; color: white; border: none; cursor: pointer; border-radius: 3px; margin-right: 10px;">Salvar</button>
+      <button (click)="cancelEdit()" style="padding: 8px 15px; background: #6c757d; color: white; border: none; cursor: pointer; border-radius: 3px;">Cancelar</button>
+    </div>
   </div>
 </div>

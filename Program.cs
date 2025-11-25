@@ -3,6 +3,9 @@ using GuitarGuide.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure URLs
+builder.WebHost.UseUrls("http://localhost:5000");
+
 // Add services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -16,15 +19,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
-        policy.WithOrigins("http://localhost:4200")
+    options.AddPolicy("AllowAngular", policy =>
+        policy.AllowAnyOrigin()
               .AllowAnyHeader()
               .AllowAnyMethod());
 });
 
 var app = builder.Build();
-
-app.UseCors();
 
 if (app.Environment.IsDevelopment())
 {
@@ -32,17 +33,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors("AllowAngular");
+
 app.UseRouting();
 
 app.UseAuthorization();
 
 app.MapControllers();
-
-// Ensure DB created
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
-}
 
 app.Run();

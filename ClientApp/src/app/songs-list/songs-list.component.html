@@ -1,0 +1,26 @@
+<div>
+  <h2>Músicas</h2>
+
+  <button (click)="onNew()" style="padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer; border-radius: 3px; margin-bottom: 20px;">
+    ➕ Nova Música
+  </button>
+
+  <div *ngIf="songs.length === 0" style="padding: 20px; background: white; border-radius: 5px;">
+    Nenhuma música cadastrada.
+  </div>
+
+  <div *ngFor="let song of songs" style="background: white; padding: 15px; margin-bottom: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <h3 style="margin: 0 0 5px 0;">{{ song.name }}</h3>
+    <p style="margin: 0 0 10px 0; color: #666;">
+      <strong>Artista:</strong> {{ song.artist || 'N/A' }} | 
+      <strong>Afinação:</strong> {{ song.tuning || 'N/A' }} | 
+      <strong>BPM:</strong> {{ song.tempo || 'N/A' }}
+    </p>
+    <button (click)="onEdit(song)" style="padding: 5px 15px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 3px; margin-right: 10px;">
+      ✏️ Editar
+    </button>
+    <button (click)="delete(song)" style="padding: 5px 15px; background: #dc3545; color: white; border: none; cursor: pointer; border-radius: 3px;">
+      🗑️ Excluir
+    </button>
+  </div>
+</div>

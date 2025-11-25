@@ -16,4 +16,12 @@ export class ChordService {
   create(chord: Chord): Observable<any> {
     return this.http.post(this.api, chord);
   }
+
+  update(id: number, chord: Chord): Observable<any> {
+    return this.http.put(`${this.api}/${id}`, chord);
+  }
+
+  delete(id: number): Observable<any> {
+    return this.http.delete(`${this.api}/${id}`);
+  }
 }
